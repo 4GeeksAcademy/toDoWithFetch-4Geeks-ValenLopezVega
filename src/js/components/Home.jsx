@@ -9,33 +9,35 @@ const Home = () => {
 	const [tasks, setTasks] = useState([]);
 
 	async function createUser() {
-		const response = await fetch(`${baseUrl}/users/${username}`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify([])
-		});
+		try {
+			const response = await fetch(`${baseUrl}/users/${username}`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify([])
+			});
 
-		if(response.ok){
-			await getAllTasks();
+			return response;
+
+		} catch (error) {
+			console.log(error);
 		}
-
-		return response;
 	}
 
 
 	async function getAllTasks() {
 		try {
-			const response = await fetch(`${baseUrl}/users/${username}`)
-			const data = await response.json()
+			const response = await fetch(`${baseUrl}/users/${username}`);
 
-			if (response.ok) {
-				setTasks(data.todos)
+			if (response.status === 404) {
+				await createUser();
+				return;
 			}
 
-			if (response.status == 404) {
-				await createUser();
+			if (response.ok) {
+				const data = await response.json();
+				setTasks(data.todos);
 			}
 
 		} catch (error) {
@@ -62,7 +64,7 @@ const Home = () => {
 			});
 
 			if (response.ok) {
-				setTasks([...tasks, newTask]);
+				getAllTasks();
 				setTaskInput('');
 			}
 
@@ -74,7 +76,6 @@ const Home = () => {
 
 	async function deleteTask(idToDelete) {
 		try {
-			console.log(idToDelete)
 			const response = await fetch(`${baseUrl}/todos/${idToDelete}`, {
 				method: "DELETE"
 			});
@@ -95,14 +96,16 @@ const Home = () => {
 				method: "DELETE"
 			});
 
-			if(response.ok) {
-				getAllTasks();
+			if (response.ok) {
+				await createUser(); // recrea el usuario vacío
+				setTasks([]);       // limpia la lista de tareas
 			}
+
 		} catch (error) {
 			console.log(error);
 		}
 	}
-	
+
 
 	useEffect(() => {
 		getAllTasks()
